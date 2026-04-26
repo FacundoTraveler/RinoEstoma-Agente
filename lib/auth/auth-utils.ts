@@ -389,21 +389,3 @@ export async function updateUserType(
     }
   }
 }
-
-
-/**
- * Get user by ID directly (avoids calling getSession to prevent auth lock deadlock)
- */
-export async function getUserById(userId: string): Promise<DBUser | null> {
-    try {
-          const { data: profile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', userId)
-            .single()
-          return profile || null
-    } catch (error) {
-          console.error('[v0] Get user by ID error:', error)
-          return null
-    }
-}
