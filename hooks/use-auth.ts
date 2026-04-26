@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useContext, createContext } from 'react'
 import { supabase } from '@/lib/supabase-client'
 import { User as DBUser } from '@/lib/types'
-import * as authUtils from '@/lib/auth/auth-hutils'
+import * as authUtils from '@/lib/auth/auth-utils'
 
 interface AuthContextType {
   user: DBUser | null
