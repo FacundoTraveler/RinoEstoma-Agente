@@ -44,13 +44,16 @@ export function useAuth(): AuthContextType {
     // Suscribirse a cambios de sesión
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        const currentUser = await authUtils.getUserById(session.user.id)
-        setUser(currentUser)
-      } else {
-        setUser(null)
-      }
+    } = supabase.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                      // Defer async work outside the Supabase auth lock to prevent deadlock
+                      setTimeout(async () => {
+                                  const currentUser = await authUtils.getUserById(session.user.id)
+                                  setUser(currentUser)
+                      }, 0)
+            } else {
+                      setUser(null)
+            }
     })
 
     return () => {
