@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useContext, createContext } from 'react'
 import { supabase } from '@/lib/supabase-client'
 import { User as DBUser } from '@/lib/types'
-import * as authUtils from '@/lib/auth/auth-utils'
+import * as authUtils from '@/lib/auth/auth-hutils'
 
 interface AuthContextType {
   user: DBUser | null
@@ -46,7 +46,7 @@ export function useAuth(): AuthContextType {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session) {
-        const currentUser = await authUtils.getCurrentUser()
+        const currentUser = await authUtils.getUserById(session.user.id)
         setUser(currentUser)
       } else {
         setUser(null)
