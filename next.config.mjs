@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   basePath: '/agente',
+  env: {
+    NEXT_PUBLIC_BASE_PATH: '/agente',
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
