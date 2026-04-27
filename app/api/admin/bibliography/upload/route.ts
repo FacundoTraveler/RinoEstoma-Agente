@@ -32,11 +32,11 @@ export async function POST(request: NextRequest) {
     // Verificar rol de usuario
     const { data: userData } = await supabase
       .from('users')
-      .select('role')
+      .select('user_type')
       .eq('id', user.id)
       .single()
 
-    if (!userData || userData.role !== 'admin') {
+    if (!userData || userData.user_type !== 'admin') {
       return NextResponse.json(
         { error: 'Only administrators can upload bibliographic documents' },
         { status: 403 }
@@ -231,11 +231,11 @@ export async function GET(request: NextRequest) {
 
     const { data: userData } = await supabase
       .from('users')
-      .select('role')
+      .select('user_type')
       .eq('id', user.id)
       .single()
 
-    if (!userData || userData.role !== 'admin') {
+    if (!userData || userData.user_type !== 'admin') {
       return NextResponse.json(
         { error: 'Only administrators can view documents' },
         { status: 403 }
