@@ -24,36 +24,23 @@ export function useAuth(): AuthContextType {
   const [user, setUser] = useState<DBUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Cargar usuario actual al montar
+  // Auth state is managed entirely by onAuthStateChange (INITIAL_SESSION fires on subscribe)
   useEffect(() => {
-    const loadUser = async () => {
-      setIsLoading(true)
-      try {
-        const currentUser = await authUtils.getCurrentUser()
-        setUser(currentUser)
-      } catch (error) {
-        console.error('[v0] Error loading user:', error)
-        setUser(null)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadUser()
-
-    // Suscribirse a cambios de sesión
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-            // Defer ALL auth state changes outside the Supabase auth lock to prevent deadlock
-            setTimeout(async () => {
-                      if (session) {
-                                  const currentUser = await authUtils.getUserById(session.user.id)
-                                  setUser(currentUser)
-                      } else {
-                                  setUser(null)
-                      }
-            }, 0)
+      // Defer ALL work outside the Supabase auth lock to prevent deadlock.
+      // INITIAL_SESSION fires immediately on subscribe with the current session,
+      // so this handles both initial load and subsequent auth changes.
+      setTimeout(async () => {
+        if (session) {
+          const currentUser = await authUtils.getUserById(session.user.id)
+          setUser(currentUser)
+        } else {
+          setUser(null)
+        }
+        setIsLoading(false)
+      }, 0)
     })
 
     return () => {
