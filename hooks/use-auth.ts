@@ -24,22 +24,37 @@ export function useAuth(): AuthContextType {
   const [user, setUser] = useState<DBUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Auth state is managed entirely by onAuthStateChange (INITIAL_SESSION fires on subscribe)
+  // Auth state managed via onAuthStateChange.
+  // Supabase fires INITIAL_SESSION with null BEFORE reading localStorage on first page load,
+  // then fires again with the real session. We handle this by calling getSession() directly
+  // on null INITIAL_SESSION to get the true stored session.
   useEffect(() => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      // Defer ALL work outside the Supabase auth lock to prevent deadlock.
-      // INITIAL_SESSION fires immediately on subscribe with the current session,
-      // so this handles both initial load and subsequent auth changes.
       setTimeout(async () => {
         if (session) {
+          // Valid session: fetch DB user profile
           const currentUser = await authUtils.getUserById(session.user.id)
           setUser(currentUser)
-        } else {
+          setIsLoading(false)
+        } else if (event === 'SIGNED_OUT') {
+          // Explicit sign-out: clear user
           setUser(null)
+          setIsLoading(false)
+        } else if (event === 'INITIAL_SESSION') {
+          // INITIAL_SESSION with null fires before Supabase reads localStorage.
+          // Call getSession() directly — by now the storage read is complete.
+          const { data: { session: storedSession } } = await supabase.auth.getSession()
+          if (storedSession) {
+            const currentUser = await authUtils.getUserById(storedSession.user.id)
+            setUser(currentUser)
+          } else {
+            setUser(null)
+          }
+          setIsLoading(false)
         }
-        setIsLoading(false)
+        // Other null-session events (e.g. TOKEN_REFRESHED failure): ignore
       }, 0)
     })
 
