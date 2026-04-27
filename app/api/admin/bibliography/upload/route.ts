@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+39
+  import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import { supabase } from '@/lib/supabase-client'
 import { extractTextFromPDF, cleanExtractedText, chunkText } from '@/lib/pdf/pdf-processor'
