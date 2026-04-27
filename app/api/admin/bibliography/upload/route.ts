@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import { supabase } from '@/lib/supabase-client'
-import { extractPDFContent, cleanExtractedText, chunkText } from '@/lib/pdf/pdf-processor'
+import { extractTextFromPDF, cleanExtractedText, chunkText } from '@/lib/pdf/pdf-processor'
 import { generateBatchEmbeddings } from '@/lib/rag/embeddings'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     const pdfBuffer = Buffer.from(await file.arrayBuffer())
 
     // Extraer contenido del PDF
-    const extractedContent = await extractPDFContent(pdfBuffer)
+    const extractedContent = await extractTextFromPDF(pdfBuffer)
     console.log('[v0] PDF content extracted:', {
       pages: extractedContent.metadata.pages,
       sections: extractedContent.sections.length,
