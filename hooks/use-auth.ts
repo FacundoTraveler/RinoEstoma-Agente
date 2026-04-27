@@ -33,23 +33,30 @@ export function useAuth(): AuthContextType {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       setTimeout(async () => {
+        console.log('[AUTH] onAuthStateChange event:', event, 'has session:', !!session)
         if (session) {
           // Valid session: fetch DB user profile
           const currentUser = await authUtils.getUserById(session.user.id)
+          console.log('[AUTH] getUserById result:', currentUser?.user_type, currentUser?.email)
           setUser(currentUser)
           setIsLoading(false)
         } else if (event === 'SIGNED_OUT') {
           // Explicit sign-out: clear user
+          console.log('[AUTH] SIGNED_OUT -> clearing user')
           setUser(null)
           setIsLoading(false)
         } else if (event === 'INITIAL_SESSION') {
           // INITIAL_SESSION with null fires before Supabase reads localStorage.
           // Call getSession() directly — by now the storage read is complete.
+          console.log('[AUTH] INITIAL_SESSION null -> calling getSession()')
           const { data: { session: storedSession } } = await supabase.auth.getSession()
+          console.log('[AUTH] getSession() result:', !!storedSession, storedSession?.user?.id)
           if (storedSession) {
             const currentUser = await authUtils.getUserById(storedSession.user.id)
+            console.log('[AUTH] getUserById (stored) result:', currentUser?.user_type)
             setUser(currentUser)
           } else {
+            console.log('[AUTH] No stored session -> clearing user')
             setUser(null)
           }
           setIsLoading(false)
