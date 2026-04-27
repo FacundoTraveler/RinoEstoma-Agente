@@ -46,7 +46,7 @@ export default function KnowledgeBasePage() {
   const loadArticles = async () => {
     setIsLoading(true)
     try {
-      const url = new URL('/api/knowledge/articles', window.location.origin)
+      const url = new URL((process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/api/knowledge/articles', window.location.origin)
       if (searchQuery) url.searchParams.set('q', searchQuery)
       if (selectedCategory) url.searchParams.set('category', selectedCategory)
       const res = await fetch(url)
@@ -98,7 +98,7 @@ export default function KnowledgeBasePage() {
       formData.append('category', uploadCategory)
       if (uploadTags) formData.append('tags', uploadTags)
 
-      const res = await fetch('/api/knowledge/upload-pdf', { method: 'POST', body: formData })
+      const res = await fetch((process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/api/knowledge/upload-pdf', { method: 'POST', body: formData })
       const data = await res.json()
 
       if (!res.ok) {
@@ -121,7 +121,7 @@ export default function KnowledgeBasePage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Eliminar este fragmento de la base de conocimiento?')) return
     try {
-      await fetch('/api/knowledge/articles', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+      await fetch((process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/api/knowledge/articles', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
       setArticles((prev) => prev.filter((a) => a.id !== id))
     } catch (_) {}
   }
