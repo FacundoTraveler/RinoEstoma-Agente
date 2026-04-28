@@ -6,7 +6,7 @@
 
 **Agente inteligente de IA para RinoEstomatología integrado con ChatSDK, Vercel AI SDK y WhatsApp Business**
 
-[Documentación](#documentation) • [Setup](#setup) • [Características](#características) • [Deployment](#deployment) • [Contribuir](#contributing)
+[Documentación](#documentation) • [Setup](#setup) • [WhatsApp](#whatsapp) • [Características](#características) • [Deployment](#deployment) • [Contribuir](#contributing)
 
 </div>
 
