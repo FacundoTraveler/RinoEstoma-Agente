@@ -28,9 +28,6 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 }
 
-  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-}
-
 // POST para procesar mensajes
 export async function POST(request: NextRequest) {
   try {
