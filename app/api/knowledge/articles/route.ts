@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase-client'
 import { insertArticle, queryKnowledgeBase } from '@/lib/rag/rag-engine'
 import { z } from 'zod'
+
+/**
+ * Knowledge Base API
+ * GET: Buscar artículos
+ * POST: Crear nuevos artículos (requiere autenticación)
+ */
 
 const articleSchema = z.object({
   title: z.string().min(1),
@@ -12,85 +17,99 @@ const articleSchema = z.object({
   metadata: z.record(z.any()).optional(),
 })
 
-// GET: listar todos los articulos, o buscar por query/categoria
+// GET: Buscar artículos por query
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const query = searchParams.get('q')
     const category = searchParams.get('category')
-    const sourcePdf = searchParams.get('source_pdf')
 
-    // Sin filtros: devolver todos los articulos ordenados por fecha
-    if (!query && !category && !sourcePdf) {
-      const { data: articles, error } = await supabase
-        .from('knowledge_articles')
-        .select('id, title, content, category, tags, is_public, metadata, created_at')
-        .order('created_at', { ascending: false })
-        .limit(100)
-      if (error) throw error
-      return NextResponse.json({ articles: articles || [] })
+    if (!query && !category) {
+      return NextResponse.json(
+        { error: 'Query or category parameter required' },
+        { status: 400 }
+      )
     }
 
-    // Busqueda por source_pdf (listar chunks de un PDF especifico)
-    if (sourcePdf && !query) {
-      const { data: articles, error } = await supabase
-        .from('knowledge_articles')
-        .select('id, title, content, category, tags, is_public, metadata, created_at')
-        .contains('metadata', { source_pdf: sourcePdf })
-        .order('created_at', { ascending: false })
-      if (error) throw error
-      return NextResponse.json({ articles: articles || [] })
-    }
+    let results
 
-    // Busqueda semantica por query
     if (query) {
-      const ragResult = await queryKnowledgeBase(query, { topK: 10 })
-      return NextResponse.json({ articles: ragResult.articles, sources: ragResult.sources })
+      const ragResult = await queryKnowledgeBase(query, {
+        topK: 10,
+      })
+      results = {
+        articles: ragResult.articles,
+        sources: ragResult.sources,
+      }
+    } else {
+      // Búsqueda por categoría
+      const { data: articles, error } = await (
+        await import('@/lib/supabase-client')
+      ).supabase
+        .from('knowledge_articles')
+        .select('*')
+        .eq('category', category)
+        .eq('is_public', true)
+        .limit(20)
+
+      if (error) throw error
+
+      results = {
+        articles,
+        sources: [],
+      }
     }
 
-    // Busqueda por categoria
-    const { data: articles, error } = await supabase
-      .from('knowledge_articles')
-      .select('id, title, content, category, tags, is_public, metadata, created_at')
-      .eq('category', category!)
-      .eq('is_public', true)
-      .order('created_at', { ascending: false })
-      .limit(50)
-    if (error) throw error
-    return NextResponse.json({ articles: articles || [] })
+    return NextResponse.json(results)
   } catch (error) {
     console.error('[v0] Error in GET /api/knowledge/articles:', error)
-    return NextResponse.json({ error: 'Failed to search knowledge base' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to search knowledge base' },
+      { status: 500 }
+    )
   }
 }
 
-// DELETE: eliminar articulo por id
-export async function DELETE(request: NextRequest) {
-  try {
-    const { id } = await request.json()
-    if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 })
-    const { error } = await supabase.from('knowledge_articles').delete().eq('id', id)
-    if (error) throw error
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('[v0] Error deleting article:', error)
-    return NextResponse.json({ error: 'Failed to delete article' }, { status: 500 })
-  }
-}
-
-// POST: crear articulo manualmente
+// POST: Crear nuevo artículo
 export async function POST(request: NextRequest) {
   try {
+    // TODO: Agregar validación de autenticación (admin only)
+    // if (!user || user.user_type !== 'admin') {
+    //   return NextResponse.json(
+    //     { error: 'Unauthorized' },
+    //     { status: 401 }
+    //   )
+    // }
+
     const body = await request.json()
+
+    // Validar schema
     const validatedData = articleSchema.parse(body)
+
+    // Insertar artículo
     const article = await insertArticle(validatedData)
-    if (!article) return NextResponse.json({ error: 'Failed to create article' }, { status: 500 })
+
+    if (!article) {
+      return NextResponse.json(
+        { error: 'Failed to create article' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json(article, { status: 201 })
   } catch (error) {
     console.error('[v0] Error in POST /api/knowledge/articles:', error)
+
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid request data', details: error.errors }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Invalid request data', details: error.errors },
+        { status: 400 }
+      )
     }
-    return NextResponse.json({ error: 'Failed to create article' }, { status: 500 })
+
+    return NextResponse.json(
+      { error: 'Failed to create article' },
+      { status: 500 }
+    )
   }
 }

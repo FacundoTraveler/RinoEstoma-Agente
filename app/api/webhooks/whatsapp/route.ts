@@ -14,18 +14,12 @@ export async function GET(request: NextRequest) {
   const token = searchParams.get('hub.verify_token')
   const challenge = searchParams.get('hub.challenge')
 
-// Verificar token
+  // Verificar token
   if (token === WHATSAPP_CONFIG.webhookToken) {
-    console.log('[WhatsApp Webhook] ✅ Verification successful')
-    // Meta espera texto plano, no JSON
-    return new Response(challenge, {
-      status: 200,
-      headers: { 'Content-Type': 'text/plain' }
-    })
+    return NextResponse.json(challenge)
   }
 
-  console.log('[WhatsApp Webhook] ❌ Verification failed - token mismatch')
-  return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 }
 
 // POST para procesar mensajes
