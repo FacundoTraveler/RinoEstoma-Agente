@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   const token = searchParams.get('hub.verify_token')
   const challenge = searchParams.get('hub.challenge')
 
-// Verificar token
+  // Verificar token
   if (token === WHATSAPP_CONFIG.webhookToken) {
     console.log('[WhatsApp Webhook] ✅ Verification successful')
     // Meta espera texto plano, no JSON

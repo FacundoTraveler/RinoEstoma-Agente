@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+h39
+  import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import { supabase } from '@/lib/supabase-client'
-import { extractPDFContent, cleanExtractedText, chunkText } from '@/lib/pdf/pdf-processor'
+import { extractTextFromPDF, cleanExtractedText, chunkText } from '@/lib/pdf/pdf-processor'
 import { generateBatchEmbeddings } from '@/lib/rag/embeddings'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
@@ -32,11 +33,11 @@ export async function POST(request: NextRequest) {
     // Verificar rol de usuario
     const { data: userData } = await supabase
       .from('users')
-      .select('role')
+      .select('user_type')
       .eq('id', user.id)
       .single()
 
-    if (!userData || userData.role !== 'admin') {
+    if (!userData || userData.user_type !== 'admin') {
       return NextResponse.json(
         { error: 'Only administrators can upload bibliographic documents' },
         { status: 403 }
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
     const pdfBuffer = Buffer.from(await file.arrayBuffer())
 
     // Extraer contenido del PDF
-    const extractedContent = await extractPDFContent(pdfBuffer)
+    const extractedContent = await extractTextFromPDF(pdfBuffer)
     console.log('[v0] PDF content extracted:', {
       pages: extractedContent.metadata.pages,
       sections: extractedContent.sections.length,
@@ -231,11 +232,11 @@ export async function GET(request: NextRequest) {
 
     const { data: userData } = await supabase
       .from('users')
-      .select('role')
+      .select('user_type')
       .eq('id', user.id)
       .single()
 
-    if (!userData || userData.role !== 'admin') {
+    if (!userData || userData.user_type !== 'admin') {
       return NextResponse.json(
         { error: 'Only administrators can view documents' },
         { status: 403 }
