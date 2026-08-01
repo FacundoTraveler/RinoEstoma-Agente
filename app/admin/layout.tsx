@@ -10,7 +10,7 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { user, loading } = useAuth()
+  const { user, isLoading: loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {

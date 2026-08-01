@@ -13,7 +13,7 @@ interface LoginFormProps {
   redirectTo?: string
 }
 
-export function LoginForm({ redirectTo = '/dashboard' }: LoginFormProps) {
+export function LoginForm({ redirectTo = '/admin/dashboard' }: LoginFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)

@@ -24,33 +24,45 @@ export function useAuth(): AuthContextType {
   const [user, setUser] = useState<DBUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Cargar usuario actual al montar
+  // Auth state managed via onAuthStateChange.
+  // Supabase fires INITIAL_SESSION with null BEFORE reading localStorage on first page load,
+  // then fires again with the real session. We handle this by calling getSession() directly
+  // on null INITIAL_SESSION to get the true stored session.
   useEffect(() => {
-    const loadUser = async () => {
-      setIsLoading(true)
-      try {
-        const currentUser = await authUtils.getCurrentUser()
-        setUser(currentUser)
-      } catch (error) {
-        console.error('[v0] Error loading user:', error)
-        setUser(null)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadUser()
-
-    // Suscribirse a cambios de sesión
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        const currentUser = await authUtils.getCurrentUser()
-        setUser(currentUser)
-      } else {
-        setUser(null)
-      }
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setTimeout(async () => {
+        console.log('[AUTH] onAuthStateChange event:', event, 'has session:', !!session)
+        if (session) {
+          // Valid session: fetch DB user profile
+          const currentUser = await authUtils.getUserById(session.user.id)
+          console.log('[AUTH] getUserById result:', currentUser?.user_type, currentUser?.email)
+          setUser(currentUser)
+          setIsLoading(false)
+        } else if (event === 'SIGNED_OUT') {
+          // Explicit sign-out: clear user
+          console.log('[AUTH] SIGNED_OUT -> clearing user')
+          setUser(null)
+          setIsLoading(false)
+        } else if (event === 'INITIAL_SESSION') {
+          // INITIAL_SESSION with null fires before Supabase reads localStorage.
+          // Call getSession() directly — by now the storage read is complete.
+          console.log('[AUTH] INITIAL_SESSION null -> calling getSession()')
+          const { data: { session: storedSession } } = await supabase.auth.getSession()
+          console.log('[AUTH] getSession() result:', !!storedSession, storedSession?.user?.id)
+          if (storedSession) {
+            const currentUser = await authUtils.getUserById(storedSession.user.id)
+            console.log('[AUTH] getUserById (stored) result:', currentUser?.user_type)
+            setUser(currentUser)
+          } else {
+            console.log('[AUTH] No stored session -> clearing user')
+            setUser(null)
+          }
+          setIsLoading(false)
+        }
+        // Other null-session events (e.g. TOKEN_REFRESHED failure): ignore
+      }, 0)
     })
 
     return () => {
